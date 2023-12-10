@@ -64,5 +64,6 @@ This is an example of what i would like J(the user) to be able to do with my fra
 * start simple, but useable.
 * write no placeholder comments, just output full files at a time.
 
+attached are the files i currently have, iteratibvly improve them, working toward the goal of T ( the scenario above)
 
 

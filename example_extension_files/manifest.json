@@ -3,12 +3,12 @@
     "name": "ExampleModifier",
     "version": "1.0",
     "permissions": [
-        "https://www.example.com/*"
+        "https://ashercn97.github.io/WebsiteForRasppi/*"
     ],
     "content_scripts": [
         {
             "matches": [
-                "https://www.example.com/"
+                "https://ashercn97.github.io/WebsiteForRasppi/"
             ],
             "js": [
                 "content.js"

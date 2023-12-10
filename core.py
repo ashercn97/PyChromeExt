@@ -1,4 +1,25 @@
+from flask import Flask, request, jsonify
 from js_function_extractor import extract_js_function
+
+class DataStore:
+    def __init__(self):
+        self.data = {}
+        self.new_data_available = {}  # Flag to check if new data is available
+
+    def set_data(self, key, value):
+        self.data[key] = value
+        self.new_data_available[key] = True
+
+    def get_data(self, key, mark_as_read=True):
+        if mark_as_read:
+            self.new_data_available[key] = False
+        return self.data.get(key, None)
+
+    def is_new_data_available(self, key):
+        return self.new_data_available.get(key, False)
+
+
+
 
 class Permission:
     def __init__(self, urls):
@@ -35,8 +56,22 @@ class Website:
         self.interactions.append(js_code)
         return "value"
 
+    def read_element_by_id(self, element_id):
+        self.interactions.append(self.transpiler.translate('read_element_by_id', element_id))
+        return "text"
+
+    def set_element_by_id(self, element_id, value):
+        self.interactions.append(self.transpiler.translate('set_element_by_id', element_id, value))
+
+    def write_element_by_id(self, element_id, text):
+        self.interactions.append(self.transpiler.translate('write_element_by_id', element_id, text))
+
     def generate_script(self):
         return "setTimeout(() => { \n" + "\n".join(self.interactions) + "\n  }, 1000);"
+
+    def read_element_by_class(self, class_name):
+        self.interactions.append(self.transpiler.translate('read_element_by_class', class_name))
+        return "text"
 
 class ContentScript:
     def __init__(self, match_patterns, website):
@@ -53,6 +88,23 @@ class PyChromeExt:
         self.extension_version = extension_version
         self.permissions = []
         self.content_scripts = []
+        self.callbacks = {}
+        self.data_store = DataStore()  # Initialize the data store
+
+    def setup_data_receiver(self, endpoint, key, callback=None):
+        self.callbacks[key] = callback  # Store the callback function
+
+        @self.app.route(endpoint, methods=['POST'])
+        def receive_data():
+            data = request.json['data']
+            self.data_store.set_data(key, data)
+            if key in self.callbacks and self.callbacks[key]:
+                self.callbacks[key](data)  # Call the callback function with the data
+            return jsonify(success=True)
+
+    def get_data(self, key):
+        return self.data_store.get_data(key)
+
 
     def add_permission(self, permission):
         self.permissions.extend(permission.urls)

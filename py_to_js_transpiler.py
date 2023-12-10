@@ -5,6 +5,10 @@ class PyToJSTranspiler:
             'set_value': self.translate_set_value,
             'get_value': self.translate_get_value,
             'write_element': self.translate_write_element,  # Add this line
+            'read_element_by_id': self.translate_read_element_by_id,  # Add this line
+            'set_element_by_id': self.translate_set_element_by_id,    # Add this line
+            'write_element_by_id': self.translate_write_element_by_id, # Add this line
+            'read_element_by_class': self.translate_read_element_by_class,
         }
 
     def translate(self, command, *args):
@@ -23,3 +27,31 @@ class PyToJSTranspiler:
 
     def translate_write_element(self, selector, text):
         return f"document.querySelector('{selector}').innerText = `{text}`;"
+
+    def translate_read_element_by_id(self, element_id):
+        return f"""
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", 'http://localhost:5000/receive_data', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.send(JSON.stringify({{ 'data': document.getElementById('{element_id}').innerText }}));
+        """
+
+    def translate_set_element_by_id(self, element_id, value):
+        return f"document.getElementById('{element_id}').value = `{value}`;"
+
+    def translate_write_element_by_id(self, element_id, text):
+        return f"document.getElementById('{element_id}').innerText = `{text}`;"
+
+
+    def translate_read_element_by_class(self, class_name):
+            return f"""
+            var elements = document.getElementsByClassName('{class_name}');
+            var data = [];
+            for (var i = 0; i < elements.length; i++) {{
+                data.push(elements[i].innerText);
+            }}
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", 'http://localhost:5000/receive_data', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({{'data': data}}));
+            """
