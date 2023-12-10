@@ -1,0 +1,68 @@
+I want to create a framework for users to develop chrome extensions using python code. The framework (F) will provide the interactions with the web, but most of the functionality will come from the users (J) backend. The framework should be centered around either fastapi or flask. The framework should be written with a really nice, pythonic feel. Meaning that J will be able to develop chrome extensions and do chrome extension stuff like reading from the website using content.js, sending api calls to J's backend that HE writes using either flask or fastapi without having to write a background.js himself. It should NOT do transpiling, but instead should provide an "window into the web" through python. Take insporation from reflex.dev, how it lets its users create website user interfaces using just python. This framewokr (F) should in the end output a folder that interacts with the backend the J writes himself without the framework but with flask or fastapi and in that folder are the necesary thigns for a chrome extension, content.js, manifest.json, background.js, ect. 
+
+You must decide whether to use fastapi or flask.
+
+### here is a scenario of how J could use this framework ###
+# he is building an extension for his school's website, to get his schedule from the website and save it to a pdf #
+
+________________________________________
+
+from flask import Flask, jsonify, request
+import chropyext as cpe 
+# pdf stuff, not a real library just for demonstration
+import pdf_stuff
+
+app = Flas(__name__)
+
+@app.route('/api/sched', methods=['POST'])
+def sched():
+    data = requests.data
+    schedule_html = data.get("SCHEDULE")
+    # parse schedule html 
+    # turn it into a pdf
+    stuff = pdf_stuff.turn_into_pdf(schedule_html)
+    # send to database
+    send_to_database(stuff)
+    return jsonify({'message', 'successs!'}), 200
+
+
+# now into chropyext
+permissions  cpe.Perms(websites=['http://www.school-website.com']) # other permissions in the manifest.json
+configs = cpe.Configs("ScheduleHelper", perms = permissions) # other stuff sent to configs
+
+@cpe.content
+def content():
+    website = cpe.Website(permissions) # returns a list of website objects, these objects should have stuff like reading to the website, writing to it, interacting with demonstration
+    website = website[0] # the first in the list, n/a because only one in list
+
+    # after searching through the html/css/js found the div J wanted
+    schedule = website.find_element(cpe.by.ID, "schedule_div") # other ways to find elements, similar to web parsing. Maybe integrate with bs4
+
+    sched_api = cpe.API(sched) # make an api object, make it easy to call APIS defined here through the extension
+
+    sched_api.call(schedule) 
+
+    text = "schedule sent!"
+
+    website.alert(text) # do an alert on the website once it is sent to the api
+
+manifest = cpe.Manifest(configs, content=content) # create a manifest.json maker object
+manifest.make() # outputs a folder with all the necesary scripts, fully made manifest.json, and perfect to upload to google chrome! 
+
+
+while __name__=="__main__":
+    app.run() # or however you run a flask app
+
+
+________________________________________
+
+This is an example of what i would like J(the user) to be able to do with my framework. Just to remind you, here are 5 bullet points of what im building:
+
+* a framework to create chrome extensions using just python
+* framework (F) should output a folder that is the chrome extension
+* F should be created with pythoninsm in mind, making it easy for python lovers to use
+* start simple, but useable.
+* write no placeholder comments, just output full files at a time.
+
+
+
