@@ -1,0 +1,24 @@
+{
+    "manifest_version": 2,
+    "name": "ExampleModifier",
+    "version": "1.0",
+    "permissions": [
+        "https://www.example.com/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://www.example.com/"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ],
+    "background": {
+        "scripts": [
+            "background.js"
+        ],
+        "persistent": false
+    }
+}
