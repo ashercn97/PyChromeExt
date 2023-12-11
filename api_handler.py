@@ -1,3 +1,5 @@
+from flask import jsonify, request
+
 def handle_api_get_request(view_func):
     def wrapper(*args, **kwargs):
         params = request.args.to_dict()

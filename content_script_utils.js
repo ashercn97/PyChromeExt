@@ -20,3 +20,7 @@ function fetchAndProcessData(url, processData) {
         .then(response => response.json())
         .then(data => processData(data));
 }
+
+function console_log(message) {
+    console.log(message);
+}
