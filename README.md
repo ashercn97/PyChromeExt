@@ -1,2 +1,5 @@
 # PyChromeExt
-This is the very start of this idea I had to create chrome extensions using python! It is a SUPER work in progress like not even useable rn but its getting better!
+This was an idea I had to create a framework for making chrome extensions using primarily Python. I am making sure that it has a **super** pythonic feel, so it is fun to use and make. 
+
+
+
