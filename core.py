@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from js_function_extractor import extract_js_function
+from js_function_extractor import extract_js_function, find_js_function
 
 class DataStore:
     def __init__(self):
@@ -17,7 +17,54 @@ class DataStore:
 
     def is_new_data_available(self, key):
         return self.new_data_available.get(key, False)
+    
+class Function:
+    def __init__(self, path, function_name):
+        self.path = path
+        self.function_name = function_name
+        self.params = []
+        self.code = None
+        self.call_function = None
+        self._parse()
 
+    def _parse(self):
+        self.code, self.params = find_js_function(self.path, self.function_name)
+        print(self.code, self.params)
+
+    # will implement variables and stuff later, for now it must not return variables
+
+
+    # ... [other parts of the class] ...
+
+    def _call(self, **kwargs):
+
+        if not self.code:
+            self._parse()
+        if self.code:
+
+            for param in self.params:
+                if param not in kwargs:
+                    raise ValueError(f"Missing parameter '{param}' for function '{self.function_name}'.")
+
+            formatted_args = []
+            for arg in kwargs.values():
+                if isinstance(arg, str):
+                    # Use raw string for string arguments
+                    formatted_arg = fr'"{arg}"'
+                else:
+                    # Directly convert non-strings to string
+                    formatted_arg = str(arg)
+                formatted_args.append(formatted_arg)
+
+            self.call_function = fr"{self.function_name}({','.join(formatted_args)});"
+            return self.call_function
+        else:
+            raise ValueError(f"Function '{self.function_name}' not found.")
+
+
+
+    def call(self, **kwargs):
+        self._call(**kwargs)
 
 
 
@@ -29,6 +76,16 @@ class Website:
     def __init__(self, transpiler):
         self.interactions = []
         self.transpiler = transpiler
+        self.functions = []
+        self.before_interactions = []
+
+    # put it in a function, and it will work
+    def add_js_from_file(self, js_file_path, function_name, params):
+        js_function_code = extract_js_function(js_file_path, function_name, params)
+        if js_function_code:
+            self.interactions.append(js_function_code)
+        else:
+            print(f"function {function_name} not found")
 
     def add_interaction(self, command, *args):
         js_code = self.transpiler.translate(command, *args)
@@ -50,6 +107,8 @@ class Website:
     
     def add_custom_interaction(self, interaction_code):
         self.interactions.append(interaction_code)
+    def add_custom_before_interaction(self, interaction_code):
+        self.before_interactions.append(interaction_code)
 
     def get_value(self, selector):
         js_code = self.transpiler.translate('get_value', selector)
@@ -67,12 +126,30 @@ class Website:
         self.interactions.append(self.transpiler.translate('write_element_by_id', element_id, text))
 
     def generate_script(self):
-        return "setTimeout(() => { \n" + "\n".join(self.interactions) + "\n  }, 1000);"
+        script = "\n" + "\n".join(self.before_interactions) + "\n" + "setTimeout(() => { \n" + "\n".join(self.interactions) + "\n  }, 1000);"
+        return script
 
     def read_element_by_class(self, class_name):
         self.interactions.append(self.transpiler.translate('read_element_by_class', class_name))
         return "text"
+    
+    def add_function(self, function):
+        self.functions.append(function)
+        self.add_custom_before_interaction(function.code)
+    
+    def call_function(self, function_name, **kwargs):
+            function_found = False
+            for function in self.functions:
+                if function.function_name == function_name:
+                    function_found = True
+                    code = function._call(**kwargs)  # Call the function
+                    self.interactions.append(code)  # Add the function call to the interactions
+                    break  # Break the loop once the function is found and called
 
+            if not function_found:
+                raise ValueError(f"Function '{function_name}' not found.")
+    
+    
 class ContentScript:
     def __init__(self, match_patterns, website):
         self.match_patterns = match_patterns
@@ -90,6 +167,9 @@ class PyChromeExt:
         self.content_scripts = []
         self.callbacks = {}
         self.data_store = DataStore()  # Initialize the data store
+        self.functions = []
+
+
 
     def setup_data_receiver(self, endpoint, key, callback=None):
         self.callbacks[key] = callback  # Store the callback function
@@ -155,6 +235,7 @@ class PyChromeExt:
 
         with open(os.path.join(output_dir, 'background.js'), 'w') as file:
             file.write(self.generate_background_script())
+
 
     def add_content_script(self, content_script):
         self.content_scripts.append(content_script)
